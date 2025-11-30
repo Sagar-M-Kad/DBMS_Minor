@@ -1,125 +1,83 @@
-import java.io.*;
-import java.util.*;
+package com.assignment.excelhandler;
 
-/**
- * Simple Excel Reader that works with CSV files
- * No external libraries required!
- * 
- * Note: Save your Excel file as CSV format (.csv) to use this program
- */
-public class ExcelReader {
-    
-    public static void main(String[] args) {
-        // Change this to your CSV file path
-        String csvFilePath = "sample_data.csv";
-        
-        try {
-            readCSVFile(csvFilePath);
+import java.io.*;
+import org.apache.poi.xssf.usermodel.*;
+import java.util.Scanner;
+
+public class ExcelFileHandler {
+
+    private String filePath;
+    private XSSFWorkbook workbook;
+    private XSSFSheet sheet;
+
+    public ExcelFileHandler(String filePath) {
+        this.filePath = filePath;
+        try (FileInputStream fis = new FileInputStream(filePath)) {
+            workbook = new XSSFWorkbook(fis);
+            sheet = workbook.getSheetAt(0);
         } catch (IOException e) {
-            System.out.println("Error reading file: " + e.getMessage());
-            System.out.println("\nMake sure to:");
-            System.out.println("1. Create an Excel file");
-            System.out.println("2. Save it as CSV format (.csv)");
-            System.out.println("3. Place it in the same folder as this program");
+            System.out.println("Error loading file: " + e.getMessage());
         }
     }
-    
-    public static void readCSVFile(String filePath) throws IOException {
-        File file = new File(filePath);
-        
-        if (!file.exists()) {
-            System.out.println("[ERROR] File not found: " + filePath);
-            System.out.println("Please create a CSV file with the following format:");
-            System.out.println("ID,Name,CGPA");
-            System.out.println("1,Alice,8.5");
-            System.out.println("2,Bob,7.8");
-            return;
-        }
-        
-        BufferedReader br = new BufferedReader(new FileReader(file));
-        String line;
-        int rowNumber = 0;
-        
-        System.out.println("\n" + "=".repeat(80));
-        System.out.println("Reading CSV File: " + filePath);
-        System.out.println("=".repeat(80));
-        
-        // Read and display all rows
-        while ((line = br.readLine()) != null) {
-            rowNumber++;
-            
-            // Split by comma
-            String[] values = line.split(",");
-            
-            // Print row number
-            System.out.print("Row " + rowNumber + ":\t");
-            
-            // Print each cell value
-            for (int i = 0; i < values.length; i++) {
-                System.out.print(values[i].trim());
-                if (i < values.length - 1) {
-                    System.out.print("\t|\t");
-                }
+
+    public void displaySheet() {
+        if (sheet == null) return;
+        for (int i = 0; i <= sheet.getLastRowNum(); i++) {
+            XSSFRow row = sheet.getRow(i);
+            if (row == null) continue;
+            for (int j = 0; j < row.getLastCellNum(); j++) {
+                System.out.print(row.getCell(j) + "\t");
             }
             System.out.println();
-            System.out.println("-".repeat(80));
         }
-        
-        br.close();
-        
-        System.out.println("\n[SUCCESS] Total rows read: " + rowNumber);
-        
-        // Demonstrate accessing specific cell
-        demonstrateSpecificCellAccess(filePath);
     }
-    
-    // Demonstrate how to access a specific cell
-    public static void demonstrateSpecificCellAccess(String filePath) throws IOException {
-        System.out.println("\n--- Accessing Specific Cell (Row 2, Column 1) ---");
-        
-        BufferedReader br = new BufferedReader(new FileReader(filePath));
-        String line;
-        int currentRow = 0;
-        int targetRow = 2;  // Row 2 (1-indexed)
-        int targetCol = 1;  // Column 1 (0-indexed, so this is the 2nd column)
-        
-        while ((line = br.readLine()) != null) {
-            currentRow++;
-            
-            if (currentRow == targetRow) {
-                String[] values = line.split(",");
-                if (targetCol < values.length) {
-                    System.out.println("Value at Row " + targetRow + ", Column " + targetCol + ": " + values[targetCol].trim());
-                }
-                break;
-            }
-        }
-        
-        br.close();
+
+    public void updateCell(int rowIndex, int colIndex, String newValue) {
+        if (sheet == null) return;
+        XSSFRow row = sheet.getRow(rowIndex);
+        if (row == null) row = sheet.createRow(rowIndex);
+        XSSFCell cell = row.getCell(colIndex);
+        if (cell == null) cell = row.createCell(colIndex);
+        cell.setCellValue(newValue);
+        System.out.println("Cell (" + rowIndex + "," + colIndex + ") updated to: " + newValue);
     }
-    
-    // Method to search for a specific value
-    public static void searchValue(String filePath, String searchTerm) throws IOException {
-        System.out.println("\n--- Searching for: " + searchTerm + " ---");
-        
-        BufferedReader br = new BufferedReader(new FileReader(filePath));
-        String line;
-        int rowNumber = 0;
-        boolean found = false;
-        
-        while ((line = br.readLine()) != null) {
-            rowNumber++;
-            
-            if (line.toLowerCase().contains(searchTerm.toLowerCase())) {
-                System.out.println("Found in Row " + rowNumber + ": " + line);
-                found = true;
-            }
+
+    public void saveAndClose() {
+        try (FileOutputStream fos = new FileOutputStream(filePath)) {
+            workbook.write(fos);
+            workbook.close();
+            System.out.println("Changes saved to " + filePath);
+        } catch (IOException e) {
+            System.out.println("Error saving file: " + e.getMessage());
         }
-        
-        if (!found) {
-            System.out.println("Not found.");
+    }
+
+    public static void main(String[] args) {
+        Scanner sc=new Scanner(System.in);
+        ExcelFileHandler handler = new ExcelFileHandler("C:\\Users\\sachi\\Desktop\\Sample.xlsx");
+        System.out.println("Opened Sample.xlsx\n");
+        int opt, row, col;
+        String val;
+        while(true) {
+        System.out.println("Enter 1 to display\nEnter 2 to update\nEnter 3 to save and close");
+        opt=sc.nextInt();
+        switch(opt) {
+        case 1:handler.displaySheet();
+            break;
+        case 2: System.out.println("Enter row, column, String(value to be updated)");
+                row=sc.nextInt();
+                col=sc.nextInt();
+                val=sc.next();
+                handler.updateCell(row, col, val);
+            break;
+        case 3: handler.saveAndClose();
+            break;
+        default:System.out.println("Invalid Choice. Try again");
         }
-        
-        br.close();
+        if(opt==3) {
+            break;
+        }
+        }
     }
 }
+
