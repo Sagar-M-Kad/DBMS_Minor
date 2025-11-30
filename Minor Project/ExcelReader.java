@@ -4,13 +4,13 @@ import java.io.*;
 import org.apache.poi.xssf.usermodel.*;
 import java.util.Scanner;
 
-public class ExcelFileHandler {
+public class ExcelReader {
 
     private String filePath;
     private XSSFWorkbook workbook;
     private XSSFSheet sheet;
 
-    public ExcelFileHandler(String filePath) {
+    public ExcelReader(String filePath) {
         this.filePath = filePath;
         try (FileInputStream fis = new FileInputStream(filePath)) {
             workbook = new XSSFWorkbook(fis);
